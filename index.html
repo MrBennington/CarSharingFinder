@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Fahrt-Rechner</title>
+<meta name="theme-color" content="#0f766e" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Fahrt-Rechner" />
+<link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+<link rel="icon" href="./favicon-32.png" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<style>
+  :root{
+    --bg:#f4f6f4; --surface:#fff; --ink:#1c2522; --muted:#5d6b66;
+    --line:#e4e7e4; --teal:#0f766e; --teal-soft:#e7f1ef;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:28px 16px 40px}
+  .eyebrow{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--teal)}
+  h1{font-size:27px;line-height:1.15;letter-spacing:-.01em;margin:.25rem 0 0}
+  .lead{font-size:14px;color:var(--muted);margin:.5rem 0 0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .pad{padding:18px}
+  section{margin-top:20px}
+  .presets{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{border:0;cursor:pointer;border-radius:999px;padding:7px 13px;font-size:12.5px;font-weight:600;
+    background:#eef0ee;color:#3c4a45;transition:background .15s,color .15s;font-family:inherit}
+  .chip:hover{background:#e2e6e3}
+  .chip.active{background:var(--teal);color:#fff}
+  .inputs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+  .field label{font-size:12px;font-weight:600;color:var(--muted)}
+  .inrow{display:flex;align-items:baseline;gap:6px;border-bottom:2px solid var(--line);margin-top:4px}
+  .inrow:focus-within{border-color:var(--teal)}
+  .inrow input{width:100%;border:0;background:transparent;font:inherit;font-size:26px;font-weight:600;
+    padding:4px 0;outline:none;font-variant-numeric:tabular-nums}
+  .unit{font-size:14px;color:#9aa39f}
+  .toggles{display:grid;grid-template-columns:1fr;gap:12px;border-top:1px solid #eef0ee;margin-top:18px;padding-top:16px}
+  @media(min-width:560px){.toggles{grid-template-columns:1fr 1fr 1fr}}
+  .tog{display:flex;align-items:center;gap:12px;background:none;border:0;cursor:pointer;text-align:left;font-family:inherit;padding:0}
+  .sw{position:relative;flex:0 0 auto;width:44px;height:24px;border-radius:999px;background:#cfd5d2;transition:background .15s}
+  .sw.on{background:var(--teal)}
+  .sw .knob{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;
+    box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .sw.on .knob{transform:translateX(20px)}
+  .tog .tl{font-size:13px;font-weight:600;color:#2c3733}
+  .tog .ts{display:block;font-size:11px;color:var(--muted);line-height:1.2}
+  .rec{overflow:hidden;border-radius:18px;border:1px solid var(--line);background:var(--surface);
+    box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .rec-top{display:flex;align-items:center;gap:12px;padding:16px 18px;color:#fff}
+  .rec-top .lab{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+  .rec-top .nm{font-size:20px;font-weight:700;line-height:1.1}
+  .rec-top .pr{margin-left:auto;text-align:right}
+  .rec-top .pr .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+  .rec-top .pr .s{font-size:11px;opacity:.85}
+  .rec-why{padding:12px 18px;font-size:13.5px;color:#3c4a45}
+  .seclabel{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .opt{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:15px;margin-bottom:10px;
+    box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .opt.win{border:0;box-shadow:0 0 0 2px var(--c)}
+  .opt-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .opt-h .name{font-weight:700}
+  .badge{border-radius:999px;padding:2px 8px;font-size:10.5px;font-weight:600}
+  .badge.tag{background:#eef0ee;color:#6b7773}
+  .badge.cheap{color:#fff}
+  .opt-h .total{margin-left:auto;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}
+  .bar{height:8px;border-radius:999px;background:#eef0ee;overflow:hidden;margin-top:10px}
+  .bar > i{display:block;height:100%;border-radius:999px}
+  .lines{display:flex;flex-wrap:wrap;gap:2px 16px;margin-top:10px}
+  .lines span{font-size:11.5px;color:var(--muted)}
+  .lines b{color:#3c4a45;font-weight:600;font-variant-numeric:tabular-nums}
+  .note{font-size:11.5px;color:var(--muted);line-height:1.35;margin:8px 0 0}
+  .rules{background:var(--teal-soft);border:1px solid #cfe3df;border-radius:18px;padding:16px}
+  .rules ul{margin:8px 0 0;padding-left:0;list-style:none}
+  .rules li{font-size:13px;color:#3c4a45;margin:6px 0}
+  details{margin-top:16px;font-size:12px;color:var(--muted)}
+  summary{cursor:pointer;font-weight:600;color:#54615c}
+  details p{margin:6px 0;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Fahrt-Rechner · Berlin</div>
+    <h1>Welches Angebot für diese Fahrt?</h1>
+    <p class="lead">Strecke und Dauer eingeben – der Rechner vergleicht MILES, SIXT share, cambio und Mietwagen und empfiehlt das passende.</p>
+  </header>
+
+  <section class="card pad">
+    <div class="presets" id="presets"></div>
+    <div class="inputs">
+      <div class="field">
+        <label for="km">Strecke gesamt (hin &amp; zurück)</label>
+        <div class="inrow"><input id="km" type="number" min="0" inputmode="numeric" value="120" /><span class="unit">km</span></div>
+      </div>
+      <div class="field">
+        <label for="hours">Wie lange brauchst du es?</label>
+        <div class="inrow"><input id="hours" type="number" min="0" inputmode="numeric" value="8" /><span class="unit">Std.</span></div>
+      </div>
+    </div>
+    <div class="toggles" id="toggles"></div>
+  </section>
+
+  <section id="recwrap"></section>
+
+  <section>
+    <div class="seclabel">Alle Optionen im Vergleich</div>
+    <div id="results"></div>
+  </section>
+
+  <section class="rules">
+    <div class="eyebrow">Kurz gemerkt</div>
+    <ul>
+      <li>· <b>Kurz &amp; spontan in der Stadt</b> → MILES M (+ Protection Plus)</li>
+      <li>· <b>Tagesausflug mit Distanz</b> → SIXT share Tagestarif (unbegrenzte km)</li>
+      <li>· <b>Wenig km, Station um die Ecke</b> → cambio</li>
+      <li>· <b>Lange Strecke / mehrere Tage</b> (Familie, Urlaub) → Mietwagen vorab buchen</li>
+    </ul>
+  </section>
+
+  <details id="assump">
+    <summary>Annahmen &amp; Tarife anzeigen</summary>
+    <div id="assumpbody"></div>
+  </details>
+</div>
+
+<script>
+const RATES = {
+  miles:{km:0.89,silber:0.10,unlock:1,pp:2},
+  sixt:{day:24.99,km:0.19},
+  cambio:{dayCap:33,hour:2,km:0.28},
+  rental:{tiers:[[1,39],[3,33],[6,30],[999,26]],fuelPerKm:0.12},
+};
+const OPTIONS = [
+  {key:"miles",name:"MILES M",tag:"Free-Floating",color:"#0f766e",spontaneous:true,
+   note:"Spontan, Parken & Sprit inklusive. Auto zwischendurch abstellen kostet 0,09 €/min – darum bei langen Tagen teuer."},
+  {key:"sixt",name:"SIXT share",tag:"Free-Floating Tagestarif",color:"#E1581E",spontaneous:true,
+   note:"Tagespreis + km, unbegrenzte Kilometer, Sprit inklusive. Stark für Tagesausflüge."},
+  {key:"cambio",name:"cambio",tag:"stationsbasiert",color:"#2563a8",spontaneous:false,
+   note:"Günstig bei wenig km. Auto an fester Station abholen & zurückbringen – nur sinnvoll mit Station in der Nähe."},
+  {key:"rental",name:"Mietwagen",tag:"klassisch, vorab buchen",color:"#9A6A2E",spontaneous:false,
+   note:"Unbegrenzte km, Versicherung inkl. – Sprit zahlst du selbst. Bei langen Strecken / mehreren Tagen am günstigsten. 2–3 Wochen vorher übers Portal buchen."},
+];
+const PRESETS = [
+  {label:"Kurz in der Stadt",km:12,hours:2},
+  {label:"Tagesausflug",km:120,hours:8},
+  {label:"Wochenende Familie",km:660,hours:56},
+  {label:"Eine Woche",km:1500,hours:168},
+];
+const eur  = n => n.toLocaleString("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+const eur2 = n => n.toLocaleString("de-DE",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:2});
+
+const state = {km:120,hours:8,silber:true,pp:true,spontanOnly:false};
+
+function rentalDayRate(d){for(const [m,r] of RATES.rental.tiers) if(d<=m) return r; return 26;}
+
+function compute(km,hours,o){
+  const days=Math.max(1,Math.ceil(hours/24)), R=RATES;
+  const mr=R.miles.km*(1-(o.silber?R.miles.silber:0));
+  const mkm=km*mr, munl=2*R.miles.unlock, mpp=o.pp?2*R.miles.pp:0;
+  const miles={total:mkm+munl+mpp,lines:[[km+" km × "+eur2(mr),mkm],["2× Unlock",munl]].concat(o.pp?[["2× Protection Plus",mpp]]:[])};
+  const sb=days*R.sixt.day, sk=km*R.sixt.km;
+  const sixt={total:sb+sk,lines:[[days+" Tag"+(days>1?"e":"")+" × "+eur2(R.sixt.day),sb],[km+" km × "+eur2(R.sixt.km),sk]]};
+  const ct=Math.min(hours*R.cambio.hour,days*R.cambio.dayCap), ck=km*R.cambio.km;
+  const cambio={total:ct+ck,lines:[["Zeit (gedeckelt "+days+"× "+eur(R.cambio.dayCap)+")",ct],[km+" km × "+eur2(R.cambio.km)+" (Sprit inkl.)",ck]]};
+  const dr=rentalDayRate(days), rb=days*dr, fu=km*R.rental.fuelPerKm;
+  const rental={total:rb+fu,lines:[[days+" Tag"+(days>1?"e":"")+" × "+eur(dr)+" (unbegr. km)",rb],["Sprit ~"+km+" km × "+eur2(R.rental.fuelPerKm),fu]]};
+  return {miles,sixt,cambio,rental};
+}
+
+function el(html){const t=document.createElement("template");t.innerHTML=html.trim();return t.content.firstChild;}
+
+function render(){
+  const r = compute(state.km||0, state.hours||0, state);
+  let ranked = OPTIONS.map(o=>Object.assign({},o,r[o.key]))
+    .filter(o=> state.spontanOnly ? o.spontaneous : true)
+    .sort((a,b)=>a.total-b.total);
+  const maxC = Math.max.apply(null, ranked.map(o=>o.total).concat([1]));
+  const cheapest = ranked[0], runner = ranked[1];
+
+  // recommendation
+  let rec=null;
+  if(cheapest){
+    const miles = ranked.find(o=>o.key==="miles");
+    const short = (state.km<=40)&&(state.hours<=3);
+    if(short && miles && miles.total<=cheapest.total+6){
+      rec={pick:miles,reason:"Kurz und spontan – MILES ist hier am praktischsten und kaum teurer."};
+    } else {
+      let reason;
+      if(cheapest.key==="rental") reason="Lange Strecke bzw. mehrere Tage – der klassische Mietwagen mit unbegrenzten km gewinnt klar.";
+      else if(cheapest.key==="sixt") reason="Tagestour mit etwas Distanz – der Free-Floating-Tagestarif ist günstig und spontan.";
+      else if(cheapest.key==="cambio") reason="Wenig Kilometer – cambio ist am günstigsten, sofern eine Station in der Nähe ist.";
+      else reason="Kurz und spontan – MILES ist hier die beste Wahl.";
+      rec={pick:cheapest,reason:reason};
+    }
+  }
+
+  // recommendation block
+  const rw=document.getElementById("recwrap"); rw.innerHTML="";
+  if(rec){
+    const runnerTxt = (runner && rec.pick.key!==runner.key) ? ' Nächstgünstig: <b>'+runner.name+'</b> ('+eur(runner.total)+').' : '';
+    rw.appendChild(el(
+      '<div class="rec">'+
+        '<div class="rec-top" style="background:'+rec.pick.color+'">'+
+          '<div><div class="lab">Empfehlung</div><div class="nm">'+rec.pick.name+'</div></div>'+
+          '<div class="pr"><div class="v">'+eur(rec.pick.total)+'</div><div class="s">für diese Fahrt</div></div>'+
+        '</div>'+
+        '<p class="rec-why">'+rec.reason+runnerTxt+'</p>'+
+      '</div>'));
+  }
+
+  // results
+  const out=document.getElementById("results"); out.innerHTML="";
+  ranked.forEach((o,i)=>{
+    const lines=o.lines.map(l=>'<span>'+l[0]+': <b>'+eur2(l[1])+'</b></span>').join("");
+    const cheapBadge = i===0 ? '<span class="badge cheap" style="background:'+o.color+'">günstigste</span>' : '';
+    const card=el(
+      '<div class="opt'+(i===0?' win':'')+'" style="--c:'+o.color+'">'+
+        '<div class="opt-h">'+
+          '<span class="dot" style="background:'+o.color+'"></span>'+
+          '<span class="name">'+o.name+'</span>'+
+          '<span class="badge tag">'+o.tag+'</span>'+ cheapBadge +
+          '<span class="total">'+eur(o.total)+'</span>'+
+        '</div>'+
+        '<div class="bar"><i style="width:'+Math.max(4,(o.total/maxC)*100)+'%;background:'+o.color+'"></i></div>'+
+        '<div class="lines">'+lines+'</div>'+
+        '<p class="note">'+o.note+'</p>'+
+      '</div>');
+    out.appendChild(card);
+  });
+}
+
+// presets
+const pc=document.getElementById("presets");
+PRESETS.forEach(p=>{
+  const b=el('<button class="chip">'+p.label+'</button>');
+  b.onclick=()=>{state.km=p.km;state.hours=p.hours;
+    document.getElementById("km").value=p.km;document.getElementById("hours").value=p.hours;syncChips();render();};
+  pc.appendChild(b);
+});
+function syncChips(){
+  [...pc.children].forEach((b,idx)=>{
+    const p=PRESETS[idx];
+    b.classList.toggle("active", Number(state.km)===p.km && Number(state.hours)===p.hours);
+  });
+}
+
+// toggles
+const TGL=[["silber","Silber Pass","−10 % auf km-Tarif"],["pp","Protection Plus","senkt Selbstbeteiligung"],["spontanOnly","Nur spontan","ohne Vorbuchen"]];
+const tc=document.getElementById("toggles");
+TGL.forEach(([key,label,sub])=>{
+  const b=el('<button class="tog"><span class="sw'+(state[key]?" on":"")+'"><span class="knob"></span></span>'+
+    '<span><span class="tl">'+label+'</span><span class="ts">'+sub+'</span></span></button>');
+  b.onclick=()=>{state[key]=!state[key];b.querySelector(".sw").classList.toggle("on",state[key]);render();};
+  tc.appendChild(b);
+});
+
+// inputs
+document.getElementById("km").addEventListener("input",e=>{state.km=Number(e.target.value)||0;syncChips();render();});
+document.getElementById("hours").addEventListener("input",e=>{state.hours=Number(e.target.value)||0;syncChips();render();});
+
+// assumptions
+document.getElementById("assumpbody").innerHTML =
+  '<p>MILES M: '+eur2(RATES.miles.km)+'/km (Silber −10 %), 1 € Unlock, Protection Plus ~2 €/Anmietung; Hin- & Rückfahrt als 2 Anmietungen gerechnet. Parken & Sprit inkl.</p>'+
+  '<p>SIXT share: '+eur2(RATES.sixt.day)+'/Tag + '+eur2(RATES.sixt.km)+'/km, unbegrenzte km, Sprit inkl.</p>'+
+  '<p>cambio: Zeit ~'+eur(RATES.cambio.hour)+'/Std. (gedeckelt ~'+eur(RATES.cambio.dayCap)+'/Tag) + '+eur2(RATES.cambio.km)+'/km inkl. Sprit; stationsbasiert.</p>'+
+  '<p>Mietwagen: ~26–39 €/Tag je nach Dauer, unbegrenzte km, Versicherung inkl., Sprit extra (~'+eur2(RATES.rental.fuelPerKm)+'/km).</p>'+
+  '<p style="color:#9aa39f">Grobe Schätzwerte (Stand 2026), keine Finanzberatung. Tagesaktuelle Preise in der jeweiligen App prüfen.</p>';
+
+syncChips(); render();
+
+// service worker (offline)
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+</script>
+</body>
+</html>
