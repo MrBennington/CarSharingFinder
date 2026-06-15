@@ -136,15 +136,15 @@
 <script>
 const RATES = {
   miles:{km:0.89,silber:0.10,unlock:1,pp:2},
-  sixt:{day:24.99,km:0.19},
+  sixt:{minute:0.09,day:49,inclKm:200,extraKm:0.29,unlock:1},
   cambio:{dayCap:33,hour:2,km:0.28},
   rental:{tiers:[[1,39],[3,33],[6,30],[999,26]],fuelPerKm:0.12},
 };
 const OPTIONS = [
   {key:"miles",name:"MILES M",tag:"Free-Floating",color:"#0f766e",spontaneous:true,
    note:"Spontan, Parken & Sprit inklusive. Auto zwischendurch abstellen kostet 0,09 €/min – darum bei langen Tagen teuer."},
-  {key:"sixt",name:"SIXT share",tag:"Free-Floating Tagestarif",color:"#E1581E",spontaneous:true,
-   note:"Tagespreis + km, unbegrenzte Kilometer, Sprit inklusive. Stark für Tagesausflüge."},
+  {key:"sixt",name:"SIXT share",tag:"Free-Floating Tagespaket",color:"#E1581E",spontaneous:true,
+   note:"Tagespaket ~49 € mit 200 km inkl. (oder Minutentarif 0,09 €/min) – Sprit & Parken inklusive. Preise schwanken nach Uhrzeit/Auslastung; in der App prüfen."},
   {key:"cambio",name:"cambio",tag:"stationsbasiert",color:"#2563a8",spontaneous:false,
    note:"Günstig bei wenig km. Auto an fester Station abholen & zurückbringen – nur sinnvoll mit Station in der Nähe."},
   {key:"rental",name:"Mietwagen",tag:"klassisch, vorab buchen",color:"#9A6A2E",spontaneous:false,
@@ -168,8 +168,15 @@ function compute(km,hours,o){
   const mr=R.miles.km*(1-(o.silber?R.miles.silber:0));
   const mkm=km*mr, munl=2*R.miles.unlock, mpp=o.pp?2*R.miles.pp:0;
   const miles={total:mkm+munl+mpp,lines:[[km+" km × "+eur2(mr),mkm],["2× Unlock",munl]].concat(o.pp?[["2× Protection Plus",mpp]]:[])};
-  const sb=days*R.sixt.day, sk=km*R.sixt.km;
-  const sixt={total:sb+sk,lines:[[days+" Tag"+(days>1?"e":"")+" × "+eur2(R.sixt.day),sb],[km+" km × "+eur2(R.sixt.km),sk]]};
+  const sxMins=hours*60;
+  const sxMinExtra=Math.max(0,km-R.sixt.inclKm)*R.sixt.extraKm;
+  const sxMinTotal=sxMins*R.sixt.minute+sxMinExtra+R.sixt.unlock;
+  const sxDayBase=days*R.sixt.day, sxDayIncl=days*R.sixt.inclKm;
+  const sxDayExtra=Math.max(0,km-sxDayIncl)*R.sixt.extraKm;
+  const sxDayTotal=sxDayBase+sxDayExtra+R.sixt.unlock;
+  const sixt = sxDayTotal<=sxMinTotal
+    ? {total:sxDayTotal,lines:[[days+" Tagespaket × "+eur(R.sixt.day)+" (je 200 km inkl.)",sxDayBase]].concat(sxDayExtra>0?[["+"+(km-sxDayIncl)+" km extra × "+eur2(R.sixt.extraKm),sxDayExtra]]:[]).concat([["Unlock",R.sixt.unlock]])}
+    : {total:sxMinTotal,lines:[[sxMins+" Min × "+eur2(R.sixt.minute)+" (200 km inkl.)",sxMins*R.sixt.minute]].concat(sxMinExtra>0?[["+"+(km-R.sixt.inclKm)+" km extra × "+eur2(R.sixt.extraKm),sxMinExtra]]:[]).concat([["Unlock",R.sixt.unlock]])};
   const ct=Math.min(hours*R.cambio.hour,days*R.cambio.dayCap), ck=km*R.cambio.km;
   const cambio={total:ct+ck,lines:[["Zeit (gedeckelt "+days+"× "+eur(R.cambio.dayCap)+")",ct],[km+" km × "+eur2(R.cambio.km)+" (Sprit inkl.)",ck]]};
   const dr=rentalDayRate(days), rb=days*dr, fu=km*R.rental.fuelPerKm;
@@ -271,7 +278,7 @@ document.getElementById("hours").addEventListener("input",e=>{state.hours=Number
 // assumptions
 document.getElementById("assumpbody").innerHTML =
   '<p>MILES M: '+eur2(RATES.miles.km)+'/km (Silber −10 %), 1 € Unlock, Protection Plus ~2 €/Anmietung; Hin- & Rückfahrt als 2 Anmietungen gerechnet. Parken & Sprit inkl.</p>'+
-  '<p>SIXT share: '+eur2(RATES.sixt.day)+'/Tag + '+eur2(RATES.sixt.km)+'/km, unbegrenzte km, Sprit inkl.</p>'+
+  '<p>SIXT share: Tagespaket ab ~'+eur(RATES.sixt.day)+' mit '+RATES.sixt.inclKm+' km inkl. (oder '+eur2(RATES.sixt.minute)+'/Min), Extra-km ~'+eur2(RATES.sixt.extraKm)+', Unlock ~'+eur(RATES.sixt.unlock)+'; Sprit inkl. Dynamisch – App-Preis prüfen.</p>'+
   '<p>cambio: Zeit ~'+eur(RATES.cambio.hour)+'/Std. (gedeckelt ~'+eur(RATES.cambio.dayCap)+'/Tag) + '+eur2(RATES.cambio.km)+'/km inkl. Sprit; stationsbasiert.</p>'+
   '<p>Mietwagen: ~26–39 €/Tag je nach Dauer, unbegrenzte km, Versicherung inkl., Sprit extra (~'+eur2(RATES.rental.fuelPerKm)+'/km).</p>'+
   '<p style="color:#9aa39f">Grobe Schätzwerte (Stand 2026), keine Finanzberatung. Tagesaktuelle Preise in der jeweiligen App prüfen.</p>';
